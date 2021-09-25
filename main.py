@@ -15,22 +15,25 @@ def main() -> int:
     n_sensors = 15
     n_bins = 1000
     f_grid = 1/n_bins * np.arange(n_bins)
-    frequencies = [10, 20]
+    frequencies = [300, 600]
     n_frequencies = len(frequencies)
-    doas = np.asarray([0, 10, 20, 30]) * pi/180
+    doas = np.asarray([90]) * pi/180
     #doas = np.asarray([-60, -35, -15, 5, 30, 45, 60]) * pi/180
     n_doa = len(doas)
     
     '''
     Simulate Time-Domain Measurements
     '''
-    signals = random.randn(n_frequencies, n_doa)
+    signals = np.sign(random.randn(n_frequencies, n_doa)) * (1 + random.rand(n_frequencies, n_doa))
+
     #measurements = np.zeros([n_sensors, n_bins])
     matrix = manifold_tensor(f_grid[frequencies], doas, n_sensors)
     measurements = np.zeros([n_bins, n_sensors], dtype=complex)
     for i, indx in enumerate(frequencies):
         measurements[indx] = matrix[i] @ signals[i]
-    measurements = fft.ifft(measurements, axis=0)
+    measurements_backup = measurements
+    #measurements = fft.ifft(measurements, axis=0)
+    print(1/f_grid[frequencies[0]])
     
     '''
     Simulate Processing of Measurements
@@ -40,7 +43,8 @@ def main() -> int:
     hankels = np.zeros([n_frequencies, n_syn_sensors//2 + 1, n_syn_sensors - n_syn_sensors//2], dtype=complex)
 
     # After taking 1000 time samples, need to computer DFT of measurements
-    measurements = fft.fft(measurements, axis=0)
+    #measurements = fft.fft(measurements, axis=0)
+
     
     # We must know which frequencies we are measuring prior
     syn_measurements[0][0:n_sensors] = measurements[frequencies[0]]
@@ -52,7 +56,6 @@ def main() -> int:
     # Search on DOA grid
     doa_grid = np.arange(-60, 60, 1) * pi/180
     shared_matrix = manifold(f_grid[frequencies[0]], doa_grid, np.arange(n_syn_sensors))
-    print(shared_matrix.shape[:hankels.shape[1]])
     filled_hankels = np.zeros_like(hankels)
     filled_hankels[0] = fill_hankel_by_rank_minimization(hankels[0], shared_matrix[:hankels.shape[1]])
     filled_hankels[1] = fill_hankel_by_rank_minimization(hankels[1], shared_matrix[:hankels.shape[1]])
