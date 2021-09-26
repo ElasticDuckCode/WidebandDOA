@@ -6,8 +6,8 @@ import scipy.linalg as linalg
 import scipy.signal as sps
 
 
-def manifold(f_i, doa_list, sensor_list):
-    return np.exp(2*np.pi*1j * f_i * np.outer(sensor_list, np.sin(doa_list)))
+def manifold(f_i, doa_list, sensor_list, d = 1):
+    return np.exp(2*np.pi*1j * f_i * d * np.outer(sensor_list, np.sin(doa_list)))
 
 
 def manifold_tensor(f_list, doa_list, N):
