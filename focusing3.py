@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import numpy as np
 from numpy import random
 from numpy import pi
@@ -29,7 +28,7 @@ def music(R_yy, sensors, n_sources, ref_f, N):
     return pseudospectrum
 
 
-def focussing_matrix_rss(A_fi, A_f0):
+def focussing_matrix_rss(A_fi: np.ndarray, A_f0: np.ndarray) -> np.ndarray:
     '''
     Compute the RSS focusing matrix which would convert array manifolds
     in A(f_i) to A(f_0) according to Hung's and Kaveh's method proposed in

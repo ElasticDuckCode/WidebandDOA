@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy import pi, random
-from numpy.fft import *
+from numpy import pi, random, fft
 
     
 def A(theta_list, f_i, N) -> np.ndarray:
@@ -38,7 +37,7 @@ def example() -> int:
         if i == 10 or i == 20:
             matrix = A(doa_array, f_grid[i], n_sensors)
             measurements[:, :, i] = matrix @ signal
-    measurements = ifft(measurements, axis=-1, norm='forward')
+    #measurements = fft.ifft(measurements, axis=-1, norm='forward')
     #measurement = np.sum(measurements, axis=-1)
     measurements = measurements.reshape(n_sensors, n_bins)
 
@@ -74,7 +73,7 @@ def main() -> int:
     n_snapshots = 1000
     f_carrier = 400
     bandwidth = 80
-    freq_grid = 1/n_bins * fftfreq(n_bins)
+    freq_grid = 1/n_bins * fft.fftfreq(n_bins)
     doa_array = np.asarray([-60, -35, -15, 5, 30, 45, 60]) * pi/180
 
     # Get mask for possible frequency content of the signals on carriers

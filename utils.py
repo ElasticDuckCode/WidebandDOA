@@ -7,15 +7,31 @@ import scipy.signal as sps
 
 
 def manifold(f_i, doa_list, sensor_list, d = 1):
-    return np.exp(2*np.pi*1j * f_i * d * np.outer(sensor_list, np.sin(doa_list)))
+    return np.exp(np.pi*1j * f_i * d * np.outer(sensor_list, np.sin(doa_list)))
 
 
-def manifold_tensor(f_list, doa_list, N):
-    tensor = np.zeros([len(f_list), N, len(doa_list)], dtype=complex)
+def manifold_tensor(f_list, doa_list, sensors, d = 1):
+    tensor = np.zeros([len(f_list), len(sensors), len(doa_list)], dtype=complex)
     for i, f_i in enumerate(f_list):
-        tensor[i] = manifold(f_i, doa_list, np.arange(N))
+        tensor[i] = manifold(f_i, doa_list, sensors, d)
     return tensor
 
+def fill_hankel_grid(hankel_measurements: np.ndarray, manifold_left: np.ndarray, manifold_right: np.ndarray,
+        max_iter: int = 1, gamma: float = 0.1, err: float = 0) -> np.ndarray:
+    _, grid_size = manifold_left.shape
+    predicted_signal = cp.Variable(shape=grid_size, complex=True)
+    hankel_indx = np.nonzero(hankel_measurements)
+    objective = cp.Minimize(cp.norm1(predicted_signal))
+    hankel_matrix = manifold_left @ cp.diag(predicted_signal) @ manifold_right.T
+    constraint = [
+        #cp.norm2(hankel_matrix[hankel_indx] - hankel_measurements[hankel_indx]) <= err,
+        hankel_matrix[hankel_indx] == hankel_measurements[hankel_indx],
+    ]
+    problem = cp.Problem(objective, constraint)
+    problem.solve(verbose=True, solver='SCS')
+    predicted_signal = predicted_signal.value
+    hankel_matrix = manifold_left @ np.diag(predicted_signal) @ manifold_right.T
+    return hankel_matrix
 
 def fill_hankel_by_rank_minimization(hankel_measurements: np.ndarray, manifold_matrix: np.ndarray,
         max_iter: int = 1, gamma: float = 0.1, err: float = 0) -> np.ndarray:
@@ -57,7 +73,7 @@ def solve_mmv(measurements: np.ndarray, manifold_matrix: np.ndarray, err: float 
         #measurements == manifold_matrix @ predicted_signals
     ]
     problem = cp.Problem(objective, constraints)
-    problem.solve(verbose=False)
+    problem.solve(verbose=False, solver='SCS')
     
     return predicted_signals.value.T
 
@@ -74,7 +90,7 @@ def solve_l1(measurement: np.ndarray, manifold_matrix: np.ndarray, err: float = 
             y = Ax
     '''
     sensor_count, grid_size = manifold_matrix.shape
-    predicted_signal = cp.Variable(shape=(grid_size))
+    predicted_signal = cp.Variable(shape=(grid_size), complex=True)
     objective = cp.Minimize(cp.norm(predicted_signal, 1))
     constraints = [
             cp.norm(measurement - manifold_matrix @ predicted_signal, 2) <= err
@@ -90,7 +106,7 @@ def get_largest_k_peaks(signal: np.ndarray, k: int = 1):
     peak_height = peak_info['peak_heights']
     peak_sortind = peak_ind[peak_height.argsort()]
     pred_peaks = peak_sortind[-k:]
-    return pred_peaks
+    return np.sort(pred_peaks)
 
 
 def calculate_support_error(pred_signal, true_signal):
