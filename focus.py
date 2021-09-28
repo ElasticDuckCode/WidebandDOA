@@ -115,6 +115,8 @@ def focussing_matrix_rss(A_fi, A_f0):
 
 
 def interpolate(bins, ii, i0, n_meas, meas, doa_grid):
+    if i0 == ii:
+        return meas # no need to extrapolate
     gcd = np.gcd(ii, i0)
     factor = ii // gcd
     syn = np.zeros(factor*(len(meas)-1)+1, dtype=complex)
@@ -124,21 +126,21 @@ def interpolate(bins, ii, i0, n_meas, meas, doa_grid):
     AL = manifold(bins[i0], doa_grid, np.arange(H.shape[0]))
     AR = manifold(bins[i0], doa_grid, np.arange(H.shape[1]))
     H_fill = fill_hankel_grid(H, AL, AR)
-    syn = np.concatenate([H_fill[:, 0], H_fill[-1, 1:]])
-    sample = i0//gcd
+    syn = np.concatenate([H_fill[:, 1], H_fill[-1, 1:]])
+    sample = i0 // gcd
     new = syn[::sample]
     new = new[:n_meas]
     return new
 
 
-def extrapolate(bins, ii, i0, meas, doa_grid):
+def extrapolate(bins, ii, i0, meas, doa_grid, step=1):
     highest_i0 = (len(meas)-1) * i0
     highest_ii = int(np.ceil(highest_i0 / ii) * ii)
     n_syn_meas = highest_ii // ii + 1
     need_ii = n_syn_meas - len(meas)
     syn = meas
-    for i in range(need_ii):
-        syn = np.append(syn, 0)
+    for i in range(need_ii // step + 1):
+        syn = np.append(syn, np.zeros(step))
         M  = len(syn) // 2 + 1
         H = linalg.hankel(syn[:M], syn[M-1:])
         AL = manifold(bins[i0], doa_grid, np.arange(H.shape[0]))

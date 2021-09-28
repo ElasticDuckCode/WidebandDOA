@@ -16,6 +16,7 @@ def manifold_tensor(f_list, doa_list, sensors, d = 1):
         tensor[i] = manifold(f_i, doa_list, sensors, d)
     return tensor
 
+
 def fill_hankel_grid(hankel_measurements: np.ndarray, manifold_left: np.ndarray, manifold_right: np.ndarray,
         max_iter: int = 1, gamma: float = 0.1, err: float = 0) -> np.ndarray:
     _, grid_size = manifold_left.shape
@@ -28,7 +29,7 @@ def fill_hankel_grid(hankel_measurements: np.ndarray, manifold_left: np.ndarray,
         hankel_matrix[hankel_indx] == hankel_measurements[hankel_indx],
     ]
     problem = cp.Problem(objective, constraint)
-    problem.solve(verbose=True, solver='SCS')
+    problem.solve(verbose=False, solver='SCS', eps=1e-9)
     predicted_signal = predicted_signal.value
     hankel_matrix = manifold_left @ np.diag(predicted_signal) @ manifold_right.T
     return hankel_matrix
