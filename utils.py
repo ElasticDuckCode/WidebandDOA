@@ -25,8 +25,8 @@ def fill_hankel_grid(hankel_measurements: np.ndarray, manifold_left: np.ndarray,
     objective = cp.Minimize(cp.norm1(predicted_signal))
     hankel_matrix = manifold_left @ cp.diag(predicted_signal) @ manifold_right.T
     constraint = [
-        #cp.norm2(hankel_matrix[hankel_indx] - hankel_measurements[hankel_indx]) <= err,
-        hankel_matrix[hankel_indx] == hankel_measurements[hankel_indx],
+        cp.norm2(hankel_matrix[hankel_indx] - hankel_measurements[hankel_indx]) <= err,
+        #hankel_matrix[hankel_indx] == hankel_measurements[hankel_indx],
     ]
     problem = cp.Problem(objective, constraint)
     problem.solve(verbose=False, solver='SCS', eps=1e-9)

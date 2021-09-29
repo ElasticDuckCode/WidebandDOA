@@ -23,12 +23,12 @@ def dynamic_dictionary(measurements, matricies, ref_matrix, f_0, freqs, grid, se
 
     # Focus w/ RSS initially using coarse grid
     n_grid=100
-    print(ref_matrix[:,0:2:].shape)
+    #print(ref_matrix[:,0:2:].shape)
     idd = np.arange(50)
     idd*=2
-    print(idd)
+    #print(idd)
     temp = matricies[0,:,idd]
-    print(matricies[0,:,idd].shape)
+    #print(matricies[0,:,idd].shape)
 
     focus_matrix = np.asarray([
         focussing_matrix_rss(A_fi=matricies[i,:,idd].T, A_f0=ref_matrix[:,idd])
@@ -49,9 +49,9 @@ def dynamic_dictionary(measurements, matricies, ref_matrix, f_0, freqs, grid, se
 
     # Initial DOA Estimates
     theta_k = np.asarray(grid[get_largest_k_peaks(sup, k=n_theta)])
-    print(theta_k)
-    plt.figure()
-    plt.plot(mfocus)
+    #print(theta_k)
+    #plt.figure()
+    #plt.plot(mfocus)
     # plt.figure()
     
     # plt.stem(np.linspace(0, 60, n_grid) * np.pi/180,sup)
@@ -59,8 +59,8 @@ def dynamic_dictionary(measurements, matricies, ref_matrix, f_0, freqs, grid, se
     #print(theta_k * 180/np.pi)
     r=3/180*np.pi
     for i in range(it):
-        print("This is r")
-        print(r)
+        #print("This is r")
+        #print(r)
         A_f0 = manifold(f_0, theta_k, sensors)
         A_fi = np.asarray([
             manifold(freqs[i], theta_k, sensors)
@@ -82,13 +82,13 @@ def dynamic_dictionary(measurements, matricies, ref_matrix, f_0, freqs, grid, se
         
         sup = solve_l1(mfocus, A_f0, err=1e-1*np.sqrt(len(sensors)))
 
-        print(sup)
+        #print(sup)
         # plt.figure()
         # plt.stem(np.linspace(0, 60, n_grid) * np.pi/180,sup)
         # plt.show()
         sups.append(sup)
         theta_k = np.asarray(grid[get_largest_k_peaks(sup, k=n_theta)])
-        print(theta_k)
+        #print(theta_k)
         theta_k = np.concatenate([
             theta_k - r, theta_k, theta_k + r
         ])
