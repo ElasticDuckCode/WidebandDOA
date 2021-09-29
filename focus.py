@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from utils import manifold, fill_hankel_grid, solve_l1, get_largest_k_peaks
 
 
-def dynamic_dictionary(measurements, matricies, ref_matrix, f_0, freqs, grid, sensors, n_theta, it=2, r=1e-5):
+def dynamic_dictionary(measurements, matricies, ref_matrix, f_0, freqs, grid, sensors, n_theta, err=1e-2, it=2, r=1e-5):
     '''
     Solve Wideband DOA problem using the Dynamic Dictionary method
     presented in 2019 "Low Complexity DOA Estimation for Wideband Off-Grid 
@@ -44,7 +44,7 @@ def dynamic_dictionary(measurements, matricies, ref_matrix, f_0, freqs, grid, se
 
     # Solve Initial L1
     A_f0 = manifold(f_0, grid, sensors)
-    sup = solve_l1(mfocus, A_f0, err=1e-2*np.sqrt(len(sensors)))
+    sup = solve_l1(mfocus, A_f0, err=err)
     sups.append(sup)
 
     # Initial DOA Estimates
@@ -79,8 +79,7 @@ def dynamic_dictionary(measurements, matricies, ref_matrix, f_0, freqs, grid, se
         #print(A_f0.shape,grid)
         # plt.figure()
         # plt.plot(mfocus)
-        
-        sup = solve_l1(mfocus, A_f0, err=1e-1*np.sqrt(len(sensors)))
+        sup = solve_l1(mfocus, A_f0, err=err)
 
         #print(sup)
         # plt.figure()

@@ -11,7 +11,7 @@ from scipy import linalg
 
 from tqdm import trange
 
-from utils import manifold, manifold_tensor, fill_hankel_grid
+from utils import manifold, manifold_tensor, fill_hankel_grid_noise
 from focus import focussing_matrix_rss, dynamic_dictionary
 
 
@@ -35,7 +35,7 @@ def interpolate(measurement, bins, grid, factor, err=0):
     n_hankel = fmeas.size // 2 + 1
     H = linalg.hankel(fmeas[:n_hankel], fmeas[n_hankel-1:])
     A = manifold(bins[1], grid, np.arange(n_hankel))
-    H_fill = fill_hankel_grid(H, A, A, err * np.sqrt(np.count_nonzero(H)))
+    H_fill = fill_hankel_grid_noise(H, A, A, err=err)
     results = np.concatenate([H_fill[:, 0], H_fill[-1, 1:]])
     return results
 
@@ -50,7 +50,7 @@ def extrapolate(results, bins, grid, n_sensors, f_0, step=1, err=0):
         n_hankel = results.size // 2 + 1
         H = linalg.hankel(results[:n_hankel], results[n_hankel-1:])
         A = manifold(bins[1], grid, np.arange(n_hankel))
-        H_fill = fill_hankel_grid(H, A, A, err * np.sqrt(np.count_nonzero(H)))
+        H_fill = fill_hankel_grid_noise(H, A, A, err=err)
         results = np.concatenate([H_fill[:, 0], H_fill[-1, 1:]])
     return results
 
@@ -105,7 +105,8 @@ if __name__ == "__main__":
             ''' Build Measurements '''
             signal = 1 + random.rand(n_freq, n_theta)
             measurements = np.asarray([matrix[i] @ signal[i] for i in range(n_freq)])
-            noise = np.sqrt(sigs[0] / 2) * np.random.rand(n_freq, n_sensors, 2).view(np.complex128).squeeze()
+            noise = np.sqrt(sigs[0] / 2) * np.random.uniform(-1, 1, size=(n_freq, n_sensors, 2)).view(np.complex128).squeeze()
+            err = linalg.norm(noise)
             measurements += noise
 
             ''' Build True for Comparision '''
@@ -120,10 +121,10 @@ if __name__ == "__main__":
             try:
                 with Pool(cpu_count()) as p:
                     # Feeding in exactly the noise norm to get best performance
-                    results = p.starmap(apply_focus, [(bins, grid, measurements[i], f_bins[i], f_0, n_sensors, 1.1*linalg.norm(noise)) for i in range(n_freq)])
+                    results = p.starmap(apply_focus, [(bins, grid, measurements[i], f_bins[i], f_0, n_sensors, err) for i in range(n_freq)])
             except:
                 # WARNING, THIS MAKES IT SO YOU HAVE TO KEYBOARD INTERUP MANY TIMES
-                print("Failed to solve, skipping MC iteration...")
+                print("ERROR: Failed to solve, skipping MC iteration...")
                 continue 
             results = np.asarray(results)
             et = time.time() - st
@@ -173,7 +174,7 @@ if __name__ == "__main__":
                manifold(freqs[i], grid, sensors)
                for i in range(n_freq)
             ])
-            sup, sups, results = dynamic_dictionary(measurements, A_fi, A_f0, bins[f_0], freqs, grid, sensors, n_theta, it=DD_it)
+            sup, sups, results = dynamic_dictionary(measurements, A_fi, A_f0, bins[f_0], freqs, grid, sensors, n_theta, err=err, it=DD_it)
             print(results.shape)
 
             # SAVE MSE

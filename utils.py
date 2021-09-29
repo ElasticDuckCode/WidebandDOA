@@ -16,6 +16,30 @@ def manifold_tensor(f_list, doa_list, sensors, d = 1):
         tensor[i] = manifold(f_i, doa_list, sensors, d)
     return tensor
 
+def fill_hankel_grid_noise(hankel_measurements: np.ndarray, manifold_left: np.ndarray, manifold_right: np.ndarray,
+        max_iter: int = 1, err: float = 0) -> np.ndarray:
+    _, grid_size = manifold_left.shape
+    predicted_signal = cp.Variable(shape=grid_size, complex=True)
+    #hankel_indx = np.nonzero(hankel_measurements)
+    objective = cp.Minimize(cp.norm1(predicted_signal))
+    hankel_matrix = manifold_left @ cp.diag(predicted_signal) @ manifold_right.T
+
+    column = hankel_measurements[:, 0]
+    row = hankel_measurements[-1, 1:]
+    measurements = np.hstack([column, row])
+    indx = np.nonzero(measurements)
+
+    predicted_column = hankel_matrix[:, 0]
+    predicted_row = hankel_matrix[-1, 1:]
+    predicted_measurement = cp.hstack([predicted_column, predicted_row])
+    constraint = [
+            cp.norm2(measurements[indx] - predicted_measurement[indx]) <= err
+    ]
+    problem = cp.Problem(objective, constraint)
+    problem.solve(verbose=False, solver='SCS', eps=1e-9)
+    predicted_signal = predicted_signal.value
+    hankel_matrix = manifold_left @ np.diag(predicted_signal) @ manifold_right.T
+    return hankel_matrix
 
 def fill_hankel_grid(hankel_measurements: np.ndarray, manifold_left: np.ndarray, manifold_right: np.ndarray,
         max_iter: int = 1, gamma: float = 0.1, err: float = 0) -> np.ndarray:
@@ -25,8 +49,8 @@ def fill_hankel_grid(hankel_measurements: np.ndarray, manifold_left: np.ndarray,
     objective = cp.Minimize(cp.norm1(predicted_signal))
     hankel_matrix = manifold_left @ cp.diag(predicted_signal) @ manifold_right.T
     constraint = [
-        cp.norm2(hankel_matrix[hankel_indx] - hankel_measurements[hankel_indx]) <= err,
-        #hankel_matrix[hankel_indx] == hankel_measurements[hankel_indx],
+        #cp.norm2(hankel_matrix[hankel_indx] - hankel_measurements[hankel_indx]) <= err,
+        hankel_matrix[hankel_indx] == hankel_measurements[hankel_indx],
     ]
     problem = cp.Problem(objective, constraint)
     problem.solve(verbose=False, solver='SCS', eps=1e-9)
